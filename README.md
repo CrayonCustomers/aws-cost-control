@@ -23,7 +23,7 @@ Before proceeding, ensure you have the following:
 
 ### 1. Use the Provided Link
 Click the following link to set up the AWS Cost Control:
-- **[Link to Create CloudFormation](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?templateURL=https://github.com/CrayonCustomers/aws-cost-control/blob/main/CrayonFinOps.yml&stackName=CrayonFinOps&param_AccountId=084528496314&param_BucketName=crayon-finops-&param_AutoCreateReportAndBucket=Yes)**
+- **[Link to Create CloudFormation](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?templateURL=https://crayondk-finops.s3-eu-central-1.amazonaws.com/CrayonFinOps.yml&stackName=CrayonFinOps&param_AccountId=084528496314&param_BucketName=crayon-finops-&param_AutoCreateReportAndBucket=Yes)**
 
 ### 2. Configure CloudFormation Parameters
 <table style="width:100%;">
