@@ -56,10 +56,6 @@ This is required to read through the resources in each member account and identi
 
 ## Enable Trusted Access for StackSets (If DeployReadOnlyAccessViaStackSet is "Yes")
 Follow the steps below to enable trusted access using AWS Console:
-<table style="width:100%;">
-    <tr>
-        <td style="width:50%; vertical-align: top;">
-
 1. **Sign in** to AWS as the administrator fo the managment account.
 2. Open the **AWS CloudFormation console**.
 3. In the navigation pane, choose **StackSets**.
@@ -67,9 +63,6 @@ Follow the steps below to enable trusted access using AWS Console:
 ![CloudFormation Stacksets](images/stacksets-navigation-pane.png)
 5. After successful enabling, a confirmation banner will appear.
 ![CloudFormation Console](images/enabled-trusted-access.png)
-    </td>
-</tr>
-</table>
 </details>
 
 #### **OrganizationUnitId**
