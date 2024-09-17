@@ -26,7 +26,7 @@ Click the following link to set up the AWS Cost Control:
 - **[Link to Create CloudFormation](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?templateURL=https://crayondk-finops.s3-eu-central-1.amazonaws.com/CrayonFinOps.yml&stackName=CrayonFinOps&param_AccountId=084528496314&param_BucketName=crayon-finops-&param_AutoCreateReportAndBucket=Yes)**
 
 ### 2. Configure CloudFormation Parameters
-<table style="width:100%;">
+<table border="0" style="width:100%;">
     <tr>
         <td style="width:50%; vertical-align: top;">
 
@@ -52,7 +52,7 @@ This is required to read through the resources in each member account and identi
   - Ensure that CloudFormation StackSets are enabled, as described below.
 
 <details>
-  <summary style="color: #FF5733; font-weight: bold;"> Click here if you selected "Yes" for DeployReadOnlyAccessViaStackSet. </summary>
+  <summary style="color: #FF5733; font-weight: bold;"><strong>Click here if you selected "Yes" for DeployReadOnlyAccessViaStackSet. </strong></summary>
 
 ## Enable Trusted Access for StackSets (If DeployReadOnlyAccessViaStackSet is "Yes")
 Follow the steps below to enable trusted access using AWS Console:
@@ -70,7 +70,7 @@ Follow the steps below to enable trusted access using AWS Console:
 - If **"Yes"** was selected, enter the unique identifier (ID) for the root organizational unit (e.g., `r-XXXX`). A root is a top-level parent node in the hierarchy of an organization that contain organizational units (OUs) and accounts.
 
 <details>
-  <summary style="color: #FF5733; font-weight: bold;"> Step to Find AWS Root Account Id </summary>
+  <summary style="color: #FF5733; font-weight: bold;"><strong>Step to Find AWS Root Account Id <strong></summary>
 
 ## Find AWS Root Account ID
 To locate the root account ID:
