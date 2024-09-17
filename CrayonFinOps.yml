@@ -1,0 +1,265 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Crayon FinOps
+Parameters:
+  AccountId:
+    Type: String
+    Description: Account that will be trusted by the Crayon FinOps access role
+    Default: 084528496314
+  BucketName:
+    Type: String
+    Description: S3 report bucket name (please add your account ID to the default bucket name prefix)
+    Default: crayon-finops-
+  AutoCreateReportAndBucket:
+    Type: String
+    Description: Select whether or not to create the S3 bucket and report definition
+    Default: "Yes"
+    AllowedValues:
+      - "Yes"
+      - "No"
+  DeployReadOnlyAccessViaStackSet:
+    Type: "String"
+    Description: "Deploy Read Only Access in member accounts based on OU"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+  OrganizationalUnitId:
+    Type: String
+    Description: Leave this blank if you select 'No' for DeployReadOnlyAccessViaStackSet. Otherwise insert the unique identifier (ID) for the root (root ID string requires "r-"). A root is a top-level parent node in the hierarchy of an organization that contain organizational units (OUs) and accounts.
+Conditions:
+  CreateReportAndBucket: !Equals
+    - !Ref AutoCreateReportAndBucket
+    - "Yes"
+  EnableReadOnlyAccess: !Equals
+    - !Ref DeployReadOnlyAccessViaStackSet
+    - "Yes"
+Resources:
+  CrayonFinOpsMemberAccountAccess:
+    Type: AWS::CloudFormation::StackSet
+    Condition: EnableReadOnlyAccess
+    Properties:
+      StackSetName: CrayonFinOpsAccess
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      Parameters:
+        - ParameterKey: ManagementAccountId
+          ParameterValue: !Ref AWS::AccountId
+        - ParameterKey: MgmtRoleName
+          ParameterValue: !Ref CrayonFinOpsAccess
+      PermissionModel: SERVICE_MANAGED
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds:
+              - !Ref OrganizationalUnitId
+          Regions:
+            - !Ref 'AWS::Region'
+      TemplateBody: |
+        ---
+        AWSTemplateFormatVersion: '2010-09-09'
+        Description: Crayon FinOps (Member Account)
+        Parameters:
+          ManagementAccountId:
+            Type: String
+          MgmtRoleName:
+            Type: String
+        Resources:
+          CrayonFinOpsMemberAccountAccess:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: CrayonFinOps
+              AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      AWS: !Sub "arn:aws:iam::${ManagementAccountId}:role/${MgmtRoleName}"
+                    Action:
+                      - sts:AssumeRole
+              ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/ReadOnlyAccess
+                - arn:aws:iam::aws:policy/SecurityAudit
+  CrayonFinOpsBucket:
+    Type: AWS::S3::Bucket
+    Condition: CreateReportAndBucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+    DeletionPolicy: Retain
+  CrayonFinOpsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: CreateReportAndBucket
+    Properties:
+      Bucket: !Ref CrayonFinOpsBucket
+      PolicyDocument:
+        Version: '2008-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: billingreports.amazonaws.com
+            Action:
+              - s3:GetBucketAcl
+              - s3:GetBucketPolicy
+            Resource: !GetAtt CrayonFinOpsBucket.Arn
+          - Effect: Allow
+            Principal:
+              Service: billingreports.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub ${CrayonFinOpsBucket.Arn}/*
+  CrayonFinOpsCur:
+    Type: Custom::Cur
+    Condition: CreateReportAndBucket
+    Properties:
+      ServiceToken: !GetAtt CrayonFinOpsCurHandler.Arn
+      ReportName: crayon-finops
+      TimeUnit: "DAILY"
+      Format: "textORcsv"
+      Compression: "ZIP"
+      AdditionalSchemaElements: ["RESOURCES"]
+      S3Bucket: !Ref BucketName
+      S3Prefix: "cfinops"
+      S3Region: !Ref AWS::Region
+      AdditionalArtifacts: []
+      RefreshClosedReports: "true"
+      ReportVersioning: "CREATE_NEW_REPORT"
+    DependsOn:
+      - CrayonFinOpsBucketPolicy
+  CrayonFinOpsAccess:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CrayonFinOpsAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AccountId}:role/GetCostFromExternalAccount-role-l9sq95cg'
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+        - arn:aws:iam::aws:policy/SecurityAudit
+      Policies:
+        - PolicyName: CrayonFinOpsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:List*
+                  - s3:Get*
+                Resource:
+                  - !Sub arn:aws:s3:::${BucketName}
+                  - !Sub arn:aws:s3:::${BucketName}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - organizations:ListAccounts
+                  - cur:DescribeReportDefinitions
+                  - ce:Get*
+                  - ce:List*
+                  - ce:Describe*
+                Resource: '*'
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: arn:aws:iam::*:role/CrayonFinOps
+  CrayonFinOpsCurHandlerRole:
+    Type: AWS::IAM::Role
+    Condition: CreateReportAndBucket
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: CrayonFinOpsCurFullAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cur:*
+                Resource: "*"
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/CrayonFinOpsCurHandler:*
+  CrayonFinOpsCurHandler:
+    Type: AWS::Lambda::Function
+    Condition: CreateReportAndBucket
+    Properties:
+      FunctionName: CrayonFinOpsCurHandler
+      Runtime: python3.9
+      Role: !GetAtt CrayonFinOpsCurHandlerRole.Arn
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              print(json.dumps(event, default=str))
+              status = cfnresponse.SUCCESS
+              data = {}
+              repdef = {}
+              keys = [
+                  'ReportName', 'TimeUnit', 'Format', 'Compression',
+                  'AdditionalSchemaElements', 'S3Bucket', 'S3Prefix',
+                  'S3Region', 'AdditionalArtifacts', 'ReportVersioning',
+                  'RefreshClosedReports',
+              ]
+              try:
+                  for key in keys:
+                      if key == 'RefreshClosedReports':
+                          repdef[key] = event['ResourceProperties'][key].lower() == 'true'
+                      else:
+                          repdef[key] = event['ResourceProperties'][key]
+              except BaseException as e:
+                  print(json.dumps(e, default=str))
+                  status = cfnresponse.FAILED
+                  data['Reason'] = f'unable to map report params ({e})'
+              if set(keys) == set(repdef.keys()):
+                  print(json.dumps(repdef, default=str))
+                  cur = boto3.client('cur', region_name='us-east-1')
+                  if event['RequestType'] == 'Create':
+                      try:
+                          cur.put_report_definition(ReportDefinition=repdef)
+                      except BaseException as e:
+                          print(json.dumps(e, default=str))
+                          status = cfnresponse.FAILED
+                          data['Reason'] = f'unable to create report definition ({e})'
+                  elif event['RequestType'] == 'Update':
+                      known_report_name = event['OldResourceProperties']['ReportName']
+                      try:
+                          cur.modify_report_definition(
+                              ReportName=known_report_name,
+                              ReportDefinition=repdef
+                          )
+                      except BaseException as e:
+                          print(json.dumps(e, default=str))
+                          status = cfnresponse.FAILED
+                          data['Reason'] = f'unable to update report definition ({e})'
+                  elif event['RequestType'] == 'Delete':
+                      try:
+                          cur.delete_report_definition(ReportName=repdef['ReportName'])
+                      except BaseException as e:
+                          print(json.dumps(e, default=str))
+                          print(f'WARNING: Deleted nothing ({e})') # silently fail delete
+              cfnresponse.send(event, context, status, data, repdef['ReportName'])
