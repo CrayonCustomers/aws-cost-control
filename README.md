@@ -99,7 +99,7 @@ You must enable **Rightsizing Recommendations** from the **Payer Account's** Cos
 ![CloudFormation Parameters](images/rightsizing-recommendation.jpg)
 
 ## Final Steps
-Once the setup is complete, please send the following information to **CloudCostControl@crayon.com**:
+Once the setup is complete, please send the following information to [Crayon FinOps Team](mailto:CloudCostControl@crayon.com):
 1. Master Account Id
 2. Bucket Name
 
@@ -113,4 +113,4 @@ You have successfully completed the onboarding process for AWS Cost Control!
 - **Authors**: Suman Bhushal
 - **Company**: Crayon
 
-Feel free to reach out to the authors or the [Crayon FinOps Team](CloudCostControl@crayon.com) team for any assistance or feedback related to this.
+Feel free to reach out to the authors or the [Crayon FinOps Team](mailto:CloudCostControl@crayon.com) team for any assistance or feedback related to this.
