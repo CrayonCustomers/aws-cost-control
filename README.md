@@ -99,7 +99,7 @@ You must enable **Rightsizing Recommendations** from the **Payer Account's** Cos
 ![CloudFormation Parameters](images/rightsizing-recommendation.jpg)
 
 ## Final Steps
-Once the setup is complete, please send the following information to **finops.dk@crayon.com**:
+Once the setup is complete, please send the following information to **CloudCostControl@crayon.com**:
 1. Master Account Id
 2. Bucket Name
 
