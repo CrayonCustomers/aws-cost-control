@@ -113,4 +113,4 @@ You have successfully completed the onboarding process for AWS Cost Control!
 - **Authors**: Suman Bhushal
 - **Company**: Crayon
 
-Feel free to reach out to the authors or the [Crayon DK FinOps Team](finops.dk@crayon.com) team for any assistance or feedback related to this.
+Feel free to reach out to the authors or the [Crayon FinOps Team](CloudCostControl@crayon.com) team for any assistance or feedback related to this.
