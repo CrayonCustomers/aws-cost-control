@@ -205,9 +205,10 @@ Resources:
     Condition: CreateReportAndBucket
     Properties:
       FunctionName: CrayonFinOpsCurHandler
-      Runtime: python3.9
+      Runtime: python3.12
       Role: !GetAtt CrayonFinOpsCurHandlerRole.Arn
       Handler: index.handler
+      Timeout: 60
       Code:
         ZipFile: |
           import json
@@ -217,8 +218,8 @@ Resources:
           def handler(event, context):
               print(json.dumps(event, default=str))
               status = cfnresponse.SUCCESS
-              data = {}
               repdef = {}
+              reason = None
               keys = [
                   'ReportName', 'TimeUnit', 'Format', 'Compression',
                   'AdditionalSchemaElements', 'S3Bucket', 'S3Prefix',
@@ -234,7 +235,7 @@ Resources:
               except BaseException as e:
                   print(json.dumps(e, default=str))
                   status = cfnresponse.FAILED
-                  data['Reason'] = f'unable to map report params ({e})'
+                  reason = f'unable to map report params ({e})'
               if set(keys) == set(repdef.keys()):
                   print(json.dumps(repdef, default=str))
                   cur = boto3.client('cur', region_name='us-east-1')
@@ -244,7 +245,7 @@ Resources:
                       except BaseException as e:
                           print(json.dumps(e, default=str))
                           status = cfnresponse.FAILED
-                          data['Reason'] = f'unable to create report definition ({e})'
+                          reason = f'unable to create report definition ({e})'
                   elif event['RequestType'] == 'Update':
                       known_report_name = event['OldResourceProperties']['ReportName']
                       try:
@@ -255,11 +256,11 @@ Resources:
                       except BaseException as e:
                           print(json.dumps(e, default=str))
                           status = cfnresponse.FAILED
-                          data['Reason'] = f'unable to update report definition ({e})'
+                          reason = f'unable to update report definition ({e})'
                   elif event['RequestType'] == 'Delete':
                       try:
                           cur.delete_report_definition(ReportName=repdef['ReportName'])
                       except BaseException as e:
                           print(json.dumps(e, default=str))
                           print(f'WARNING: Deleted nothing ({e})') # silently fail delete
-              cfnresponse.send(event, context, status, data, repdef['ReportName'])
+              cfnresponse.send(event, context, status, {}, repdef['ReportName'], False, reason)
